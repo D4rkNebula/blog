@@ -1,0 +1,28 @@
+name: DeployBlog
+on: push
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get code
+        uses: actions/checkout@v3
+      - run: rm -rf readme.md
+
+      - name: Remove
+        uses: StephanThierry/ftp-delete-action@v2.1
+        with:
+            host: ${{ secrets.FTP_SERVER }}
+            user: ${{ secrets.FTP_USER }}
+            password: ${{ secrets.FTP_PASS }}
+            remoteFiles: "*"
+            remoteDirectories: "."
+            workingDir: "."
+            ignoreSSL: "1"
+        
+
+      - name: Upload
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}

